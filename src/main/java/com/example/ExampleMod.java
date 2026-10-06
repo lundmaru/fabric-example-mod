@@ -5,6 +5,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.util.Hand;
+import org.lwjgl.glfw.GLFW;
 
 public class ExampleMod implements ClientModInitializer {
 
@@ -18,27 +20,26 @@ public class ExampleMod implements ClientModInitializer {
     public void onInitializeClient() {
         String category = "category.multimacro.title";
 
-        // V=86, C=67, X=88, G=71, B=66
-        webKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.web", 86, category));
-        waterBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.water", 67, category));
-        lavaBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.lava", 88, category));
-        pearlKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.pearl", 71, category));
-        shieldBreakerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.shieldbreaker", 66, category));
+        webKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.web", GLFW.GLFW_KEY_V, category));
+        waterBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.water", GLFW.GLFW_KEY_C, category));
+        lavaBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.lava", GLFW.GLFW_KEY_X, category));
+        pearlKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.pearl", GLFW.GLFW_KEY_G, category));
+        shieldBreakerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.shieldbreaker", GLFW.GLFW_KEY_B, category));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null) return;
+            if (client.player == null || client.interactionManager == null) return;
 
             while (webKey.wasPressed()) {
-                switchToHotbarItem(client, "cobweb");
+                switchToItemAndUse(client, "cobweb");
             }
             while (waterBucketKey.wasPressed()) {
-                switchToHotbarItem(client, "water_bucket");
+                switchToItemAndUse(client, "water_bucket");
             }
             while (lavaBucketKey.wasPressed()) {
-                switchToHotbarItem(client, "lava_bucket");
+                switchToItemAndUse(client, "lava_bucket");
             }
             while (pearlKey.wasPressed()) {
-                switchToHotbarItem(client, "ender_pearl");
+                switchToItemAndUse(client, "ender_pearl");
             }
             while (shieldBreakerKey.wasPressed()) {
                 switchToAxeAndAttack(client);
@@ -46,25 +47,44 @@ public class ExampleMod implements ClientModInitializer {
         });
     }
 
-    private void switchToHotbarItem(MinecraftClient client, String itemId) {
-        if (client.player == null) return;
+    private void switchToItemAndUse(MinecraftClient client, String itemId) {
+        int originalSlot = client.player.getInventory().selectedSlot;
+        int targetSlot = -1;
+
         for (int i = 0; i < 9; i++) {
-            String currentItem = client.player.getInventory().getStack(i).getItem().toString();
-            if (currentItem.contains(itemId)) {
-                client.player.getInventory().selectedSlot = i;
+            String name = client.player.getInventory().getStack(i).getItem().toString();
+            if (name.contains(itemId)) {
+                targetSlot = i;
                 break;
             }
+        }
+
+        if (targetSlot != -1) {
+            client.player.getInventory().selectedSlot = targetSlot;
+            client.interactionManager.interactItem(client.player, Hand.MAIN_HAND);
+            client.player.getInventory().selectedSlot = originalSlot;
         }
     }
 
     private void switchToAxeAndAttack(MinecraftClient client) {
-        if (client.player == null) return;
+        int originalSlot = client.player.getInventory().selectedSlot;
+        int axeSlot = -1;
+
         for (int i = 0; i < 9; i++) {
-            String currentItem = client.player.getInventory().getStack(i).getItem().toString();
-            if (currentItem.contains("axe")) {
-                client.player.getInventory().selectedSlot = i;
+            String name = client.player.getInventory().getStack(i).getItem().toString();
+            if (name.contains("axe")) {
+                axeSlot = i;
                 break;
             }
+        }
+
+        if (axeSlot != -1) {
+            client.player.getInventory().selectedSlot = axeSlot;
+            if (client.targetedEntity != null) {
+                client.interactionManager.attackEntity(client.player, client.targetedEntity);
+                client.player.swingHand(Hand.MAIN_HAND);
+            }
+            client.player.getInventory().selectedSlot = originalSlot;
         }
     }
 }
