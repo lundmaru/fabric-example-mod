@@ -5,13 +5,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
-import org.lwjgl.glfw.GLFW;
 
 public class ExampleMod implements ClientModInitializer {
 
@@ -25,18 +23,19 @@ public class ExampleMod implements ClientModInitializer {
     public void onInitializeClient() {
         String category = "category.multimacro.title";
 
-        webKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.web", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_V, category));
-        waterBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.water", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
-        lavaBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.lava", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, category));
-        pearlKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.pearl", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, category));
-        shieldBreakerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.shieldbreaker", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_B, category));
+        // GLFW Key codes: 86=V, 67=C, 88=X, 71=G, 66=B
+        webKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.web", 86, category));
+        waterBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.water", 67, category));
+        lavaBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.lava", 88, category));
+        pearlKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.pearl", 71, category));
+        shieldBreakerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.shieldbreaker", 66, category));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (webKey.wasPressed()) executeItemMacro(client, Items.COBWEB);
-            if (waterBucketKey.wasPressed()) executeItemMacro(client, Items.WATER_BUCKET);
-            if (lavaBucketKey.wasPressed()) executeItemMacro(client, Items.LAVA_BUCKET);
-            if (pearlKey.wasPressed()) executeItemMacro(client, Items.ENDER_PEARL);
-            if (shieldBreakerKey.wasPressed()) executeShieldBreaker(client);
+            while (webKey.wasPressed()) executeItemMacro(client, Items.COBWEB);
+            while (waterBucketKey.wasPressed()) executeItemMacro(client, Items.WATER_BUCKET);
+            while (lavaBucketKey.wasPressed()) executeItemMacro(client, Items.LAVA_BUCKET);
+            while (pearlKey.wasPressed()) executeItemMacro(client, Items.ENDER_PEARL);
+            while (shieldBreakerKey.wasPressed()) executeShieldBreaker(client);
         });
     }
 
@@ -77,7 +76,7 @@ public class ExampleMod implements ClientModInitializer {
 
         if (axeSlot != -1) {
             inventory.selectedSlot = axeSlot;
-            if (client.crosshairTarget != null) {
+            if (client.targetedEntity != null) {
                 client.interactionManager.attackEntity(client.player, client.targetedEntity);
                 client.player.swingHand(Hand.MAIN_HAND);
             }
