@@ -2,89 +2,68 @@ package com.example;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.InteractionHand;
-import org.lwjgl.glfw.GLFW;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.option.KeyBinding;
 
 public class ExampleMod implements ClientModInitializer {
 
-    private static KeyMapping webKey;
-    private static KeyMapping waterBucketKey;
-    private static KeyMapping lavaBucketKey;
-    private static KeyMapping pearlKey;
-    private static KeyMapping shieldBreakerKey;
+    private static KeyBinding webKey;
+    private static KeyBinding waterBucketKey;
+    private static KeyBinding lavaBucketKey;
+    private static KeyBinding pearlKey;
+    private static KeyBinding shieldBreakerKey;
 
     @Override
     public void onInitializeClient() {
         String category = "category.multimacro.title";
 
-        webKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.macro.web", GLFW.GLFW_KEY_V, category));
-        waterBucketKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.macro.water", GLFW.GLFW_KEY_C, category));
-        lavaBucketKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.macro.lava", GLFW.GLFW_KEY_X, category));
-        pearlKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.macro.pearl", GLFW.GLFW_KEY_G, category));
-        shieldBreakerKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.macro.shieldbreaker", GLFW.GLFW_KEY_B, category));
+        // V=86, C=67, X=88, G=71, B=66
+        webKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.web", 86, category));
+        waterBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.water", 67, category));
+        lavaBucketKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.lava", 88, category));
+        pearlKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.pearl", 71, category));
+        shieldBreakerKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.macro.shieldbreaker", 66, category));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null || client.gameMode == null) return;
+            if (client.player == null) return;
 
-            while (webKey.consumeClick()) {
-                switchToItemAndUse(client, "cobweb");
+            while (webKey.wasPressed()) {
+                switchToHotbarItem(client, "cobweb");
             }
-            while (waterBucketKey.consumeClick()) {
-                switchToItemAndUse(client, "water_bucket");
+            while (waterBucketKey.wasPressed()) {
+                switchToHotbarItem(client, "water_bucket");
             }
-            while (lavaBucketKey.consumeClick()) {
-                switchToItemAndUse(client, "lava_bucket");
+            while (lavaBucketKey.wasPressed()) {
+                switchToHotbarItem(client, "lava_bucket");
             }
-            while (pearlKey.consumeClick()) {
-                switchToItemAndUse(client, "ender_pearl");
+            while (pearlKey.wasPressed()) {
+                switchToHotbarItem(client, "ender_pearl");
             }
-            while (shieldBreakerKey.consumeClick()) {
-                switchToAxeAndAttack(client);
+            while (shieldBreakerKey.wasPressed()) {
+                switchToAxe(client);
             }
         });
     }
 
-    private void switchToItemAndUse(Minecraft client, String itemId) {
-        int originalSlot = client.player.getInventory().selectedSlot;
-        int targetSlot = -1;
-
+    private void switchToHotbarItem(net.minecraft.client.MinecraftClient client, String itemId) {
+        if (client.player == null) return;
         for (int i = 0; i < 9; i++) {
-            String name = client.player.getInventory().getItem(i).getItem().toString();
-            if (name.contains(itemId)) {
-                targetSlot = i;
+            String currentItem = client.player.getInventory().getStack(i).getItem().toString();
+            if (currentItem.contains(itemId)) {
+                client.player.getInventory().selectedSlot = i;
                 break;
             }
-        }
-
-        if (targetSlot != -1) {
-            client.player.getInventory().selectedSlot = targetSlot;
-            client.gameMode.useItem(client.player, InteractionHand.MAIN_HAND);
-            client.player.getInventory().selectedSlot = originalSlot;
         }
     }
 
-    private void switchToAxeAndAttack(Minecraft client) {
-        int originalSlot = client.player.getInventory().selectedSlot;
-        int axeSlot = -1;
-
+    private void switchToAxe(net.minecraft.client.MinecraftClient client) {
+        if (client.player == null) return;
         for (int i = 0; i < 9; i++) {
-            String name = client.player.getInventory().getItem(i).getItem().toString();
-            if (name.contains("axe")) {
-                axeSlot = i;
+            String currentItem = client.player.getInventory().getStack(i).getItem().toString();
+            if (currentItem.contains("axe")) {
+                client.player.getInventory().selectedSlot = i;
                 break;
             }
-        }
-
-        if (axeSlot != -1) {
-            client.player.getInventory().selectedSlot = axeSlot;
-            if (client.crosshairPickEntity != null) {
-                client.gameMode.attack(client.player, client.crosshairPickEntity);
-                client.player.swing(InteractionHand.MAIN_HAND);
-            }
-            client.player.getInventory().selectedSlot = originalSlot;
         }
     }
 }
